@@ -67,7 +67,7 @@ bool shouldUpdatePathsToExplore(string node, int weight)
     for (auto &n : pathsToExplore) {
         string nnode = get<1>(n);
         int nweight = get<2>(n);
-        if (node.compare(nnode) == 0 && weight > nweight)
+        if (node.compare(nnode) == 0 && weight >= nweight)
             return false;
     }
     return true;
@@ -116,7 +116,8 @@ void djikstra(string curNode)
                 int tentativeDist = myDist + d.second;
                 if (shouldUpdatePathsToExplore(d.first, tentativeDist)) {
                     cout << "Adding neighbor " << d.first
-                         << " to pathsToExplore" << endl;
+                         << " to pathsToExplore with value " << tentativeDist
+                         << endl;
                     removeFromPathsToExplore(d.first);
                     edge e = make_tuple(curNode, d.first, tentativeDist);
                     pathsToExplore.push_back(e);
