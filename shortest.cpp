@@ -10,6 +10,8 @@ typedef pair<string, int> destcost;
 typedef vector<destcost> destinations;
 typedef unordered_map<string, destinations> sourceToDestinations;
 
+typedef tuple<string, string, int> edge;
+
 constexpr int INF = 1000000; // magic number
 
 const sourceToDestinations graph{{"S", {{"A", 4}, {"B", 3}, {"D", 7}}},
@@ -22,9 +24,8 @@ const sourceToDestinations graph{{"S", {{"A", 4}, {"B", 3}, {"D", 7}}},
                                  {"G", {{"E", 2}, {"T", 3}}},
                                  {"T", {{"F", 5}}}};
 
-typedef tuple<string, string, int> edge;
-vector<edge> openSet;
-unordered_map<string, int> closedSet;
+vector<edge> pathsToExplore;
+unordered_map<string, int> DestinationDistances;
 
 const string destinationTarget = "T";
 
@@ -32,7 +33,7 @@ tuple<string, int> findNextNodeMinDistance()
 {
     string minNode{""};
     int minDistance = INF;
-    for (auto &d : openSet) {
+    for (auto &d : pathsToExplore) {
         int dist = get<2>(d);
         if (dist < minDistance) {
             minDistance = dist;
@@ -51,8 +52,8 @@ tuple<string, int> findNextNodeMinDistance()
 
 int getMyCurrentDistance(string node)
 {
-    auto me = closedSet.find(node);
-    if (me != closedSet.end()) {
+    auto me = DestinationDistances.find(node);
+    if (me != DestinationDistances.end()) {
         return me->second;
     }
     else {
@@ -61,9 +62,9 @@ int getMyCurrentDistance(string node)
     }
 }
 
-bool shouldUpdateOpenSet(string node, int weight)
+bool shouldUpdatePathsToExplore(string node, int weight)
 {
-    for (auto &n : openSet) {
+    for (auto &n : pathsToExplore) {
         string nnode = get<1>(n);
         int nweight = get<2>(n);
         if (node.compare(nnode) == 0 && weight > nweight)
@@ -72,20 +73,20 @@ bool shouldUpdateOpenSet(string node, int weight)
     return true;
 }
 
-void removeFromOpenSet(string node)
+void removeFromPathsToExplore(string node)
 {
-    for (int i = openSet.size() - 1; i >= 0; --i) {
-        edge e = openSet[i];
+    for (int i = pathsToExplore.size() - 1; i >= 0; --i) {
+        edge e = pathsToExplore[i];
         string nnode = get<1>(e);
         if (node.compare(nnode) == 0) {
-            openSet.erase(openSet.begin() + i);
+            pathsToExplore.erase(pathsToExplore.begin() + i);
         }
     }
 }
 
-void printClosedSet()
+void printDestinationDistances()
 {
-    for (auto &i : closedSet) {
+    for (auto &i : DestinationDistances) {
         cout << i.first << " : " << i.second << endl;
     }
 }
@@ -104,38 +105,41 @@ void djikstra(string curNode)
     if (nodesFound != graph.end()) { // i have nodes i can reach
         destinations currentlyReachable = nodesFound->second;
         for (auto &d : currentlyReachable) {
-            auto neighborIsInClosedSet = closedSet.find(d.first);
-            if (neighborIsInClosedSet != closedSet.end()) {
-                cout << "Skippiing " << d.first << " as it's in closedSet"
-                     << endl;
+            auto neighborIsInDestinationDistances =
+                DestinationDistances.find(d.first);
+            if (neighborIsInDestinationDistances !=
+                DestinationDistances.end()) {
+                cout << "Skippiing " << d.first
+                     << " as it's in DestinationDistances" << endl;
             }
             else {
                 int tentativeDist = myDist + d.second;
-                if (shouldUpdateOpenSet(d.first, tentativeDist)) {
-                    cout << "Adding neighbor " << d.first << " to openSet"
-                         << endl;
-                    removeFromOpenSet(d.first);
+                if (shouldUpdatePathsToExplore(d.first, tentativeDist)) {
+                    cout << "Adding neighbor " << d.first
+                         << " to pathsToExplore" << endl;
+                    removeFromPathsToExplore(d.first);
                     edge e = make_tuple(curNode, d.first, tentativeDist);
-                    openSet.push_back(e);
+                    pathsToExplore.push_back(e);
                 }
                 else
                     cout << "Nothing to update" << endl;
             }
         }
-        printClosedSet();
+        // printDestinationDistances();
 
         auto nextTuple = findNextNodeMinDistance();
         string nextNode = get<0>(nextTuple);
         int nextNodeWeight = get<1>(nextTuple);
-        cout << "Next node is " << nextNode << ". Removing from openset"
+        cout << "Next node is " << nextNode << ". Removing from pathsToExplore"
              << endl;
-        removeFromOpenSet(nextNode);
-        closedSet[nextNode] = nextNodeWeight;
+        removeFromPathsToExplore(nextNode);
+        DestinationDistances[nextNode] = nextNodeWeight;
 
-        if (closedSet.find(destinationTarget) != closedSet.end()) {
+        if (DestinationDistances.find(destinationTarget) !=
+            DestinationDistances.end()) {
             cout << "Found the Target! Distance is "
-                 << closedSet[destinationTarget] << endl;
-            printClosedSet();
+                 << DestinationDistances[destinationTarget] << endl;
+            printDestinationDistances();
             exit(0);
         }
         djikstra(nextNode);
@@ -148,6 +152,6 @@ void djikstra(string curNode)
 int main()
 {
     string startingNode = "S";
-    closedSet[startingNode] = 0;
+    DestinationDistances[startingNode] = 0;
     djikstra(startingNode);
 }
